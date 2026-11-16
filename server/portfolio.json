@@ -1,0 +1,21 @@
+{
+  "source": "https://vishalli-maini-portfolio.vercel.app/",
+  "verifiedOn": "2026-10-31",
+  "name": "Vishalli Maini",
+  "introduction": "Software engineer and team lead based in Himachal Pradesh, India. Builds full stack products, production AI agents, and real-time systems.",
+  "experience": [
+    {"company":"Inspra AI","role":"Team Lead","dates":"February 2025 to present, as listed in the source portfolio","location":"Remote","responsibilities":["Application architecture and implementation","Code reviews and sprint planning","Provider cost strategy","Multi-tenant Python backend with Redis-based per-call prompts, greetings, and tools"]},
+    {"company":"Morgan Stanley","role":"Application Development Intern","dates":"July 2024 to January 2025","location":"Bangalore","responsibilities":["Angular components for Excel import and dynamic field mapping","Fuzzy matching between spreadsheet headers and interface fields"],"recognition":"Recognition for innovation and problem-solving; no specific award title provided"}
+  ],
+  "projects": [
+    {"name":"Real-time voice infrastructure","organization":"Inspra AI","contribution":"Moved TLS setup and audio upload off the critical path, opening recognition sockets at speech onset.","reportedOutcome":"Approximately 1.05 seconds to 0.3 seconds speech-processing delay, as reported by the source portfolio; not a general end-to-end call latency measurement.","technologies":["Python","AsyncIO","LiveKit","Streaming speech"],"details":"Modular speech and LLM integrations, fallback adapters, per-agent model selection, latency-sorted LLM routing. Source is private."},
+    {"name":"Multi-tenant agent platform","organization":"Inspra AI","contribution":"Architected a Python backend that resolves prompts, greetings, and tools from Redis per call, enabling onboarding through configuration.","technologies":["Python 3.13","Redis","REST APIs","OpenAPI schemas"],"details":"Reusable appointment booking, call transfer and integration tools with configurable endpoints, authentication and templated webhook requests. Source is private."},
+    {"name":"Excel import and field mapping","organization":"Morgan Stanley","contribution":"Developed Angular components and fuzzy-matching logic to map spreadsheet headers to interface fields.","technologies":["Angular","TypeScript","Excel import","Fuzzy matching"],"details":"Internal product. The portfolio diagram is illustrative; no public repository was supplied."}
+  ],
+  "otherContributions":["Self-hosted inference using Parakeet-TDT, NVIDIA Nemotron, Whisper-distil and MeloTTS, with custom LiveKit plugins","Call-outcome engine using deterministic rules and audio-aware LLM analysis for voicemail and IVR detection, with reviewer corrections backtested as classification guidelines"],
+  "skills":{"interfaces":["React","Angular","TypeScript","JavaScript","HTML","CSS"],"systems":["Python","FastAPI","Flask","Node.js","PostgreSQL","Redis","Docker"],"intelligence":["LLM orchestration","RAG","LiveKit","Agent tools","Streaming speech"]},
+  "education":{"institution":"Chitkara University","degree":"B.E. Computer Science","years":"2021 to 2025","cgpa":"9.6/10"},
+  "achievements":["Winner, Techstars Startup Weekend Women, Chandigarh, 2022","IEEE research: Dissecting Parsley Leaf Disease Severity: Federated Learning and CNN Perspective"],
+  "links":{"email":"mailto:vishallimaini2003@gmail.com","github":"https://github.com/VishalliMaini","linkedin":"https://www.linkedin.com/in/vishalli-maini-a7b81b226","resume":"https://vishalli-maini-portfolio.vercel.app/assets/Vishalli-Maini-Resume.pdf","research":"https://ieeexplore.ieee.org/document/10270195"},
+  "unknown":["Salary expectations","Availability or notice period","Specific certifications","Public source repositories for the employer projects"]
+}

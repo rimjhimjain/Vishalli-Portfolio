@@ -1,0 +1,80 @@
+"use client";
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { ArrowUpRight, ArrowDown, ArrowUp, MessageCircle, X, Send, Download, Menu, RotateCcw } from "lucide-react";
+const links = { email: "mailto:vishallimaini2003@gmail.com", github: "https://github.com/VishalliMaini", linkedin: "https://www.linkedin.com/in/vishalli-maini-a7b81b226", resume: "/assets/Vishalli-Maini-Resume.pdf" };
+const questions = ["What are Vishalli's strongest skills?", "Tell me about her AI projects", "What is her work experience?", "How can I contact Vishalli?"];
+type Message = { role: "user" | "assistant"; content: string };
+type ChatState = { kind: "idle" } | { kind: "loading" } | { kind: "error"; message: string; question: string };
+function Recruiter({ close, messages, setMessages }: { close: () => void; messages: Message[]; setMessages: Dispatch<SetStateAction<Message[]>> }) {
+  const [input, setInput] = useState("");
+  const [state, setState] = useState<ChatState>({ kind: "idle" });
+  const dialog = useRef<HTMLDialogElement>(null);
+  const scroll = useRef<HTMLDivElement>(null);
+  const abort = useRef<AbortController | null>(null);
+  useEffect(() => {
+    const previous = document.activeElement;
+    const oldOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    dialog.current?.showModal();
+    return () => { abort.current?.abort(); document.body.style.overflow = oldOverflow; if (previous instanceof HTMLElement) previous.focus(); };
+  }, []);
+  useEffect(() => { if (scroll.current) scroll.current.scrollTop = scroll.current.scrollHeight; }, [messages, state]);
+  async function send(question: string, retry = false) {
+    const text = question.trim();
+    if (!text || state.kind === "loading") return;
+    const history = retry ? messages.slice(0, -1) : messages;
+    setMessages([...history, { role: "user", content: text }]);
+    setInput(""); setState({ kind: "loading" });
+    abort.current = new AbortController();
+    try {
+      const response = await fetch("/api/ai-recruiter/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: text, history: history.slice(-10) }), signal: abort.current.signal });
+      const data: unknown = await response.json();
+      if (!response.ok) throw new Error(typeof data === "object" && data !== null && "error" in data && typeof data.error === "string" ? data.error : "The recruiter could not respond. Please try again.");
+      if (typeof data !== "object" || data === null || !("answer" in data) || typeof data.answer !== "string") throw new Error("The response was incomplete. Please try again.");
+      setMessages([...history, { role: "user", content: text }, { role: "assistant", content: data.answer }]);
+      setState({ kind: "idle" });
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") return;
+      setState({ kind: "error", message: error instanceof Error ? error.message : "Connection interrupted. Please try again.", question: text });
+    }
+  }
+  return <dialog className="chat-panel" ref={dialog} onCancel={close} aria-labelledby="chat-title">
+    <div className="chat-top"><div className="chat-avatar"><img src="/assets/recruiter-mascot.png" alt="" /></div><div><h2 id="chat-title">Meet my AI recruiter</h2><p>Explore the person behind the work</p></div><button className="icon-button" onClick={close} aria-label="Close recruiter"><X size={21}/></button></div>
+    <div className="chat-scroll" ref={scroll} role="log" aria-live="polite" aria-relevant="additions text">
+      <div className="message assistant">Hi! I&apos;m Vishalli&apos;s AI recruiter. Ask me about her skills, projects, achievements, or experience. What would you like to explore?</div>
+      {messages.length === 0 && <div className="suggestions">{questions.map(q => <button key={q} onClick={() => send(q)}>{q}<ArrowUpRight size={15}/></button>)}</div>}
+      {messages.map((m, i) => <div key={i} className={`message ${m.role}`}><span className="sr-only">{m.role === "user" ? "You" : "AI recruiter"}: </span>{m.content}</div>)}
+      {state.kind === "loading" && <div className="message assistant typing" role="status"><span/><span/><span/><span className="sr-only">Thinking</span></div>}
+      {state.kind === "error" && <div className="chat-error" role="alert"><p>{state.message}</p><button onClick={() => send(state.question, true)}><RotateCcw size={14}/>Try again</button><a href={links.email}>Contact Vishalli directly</a></div>}
+    </div>
+    <form className="chat-form" onSubmit={e => { e.preventDefault(); send(input); }}><label className="sr-only" htmlFor="question">Your question</label><input id="question" placeholder="Ask something about Vishalli…" value={input} onChange={e => setInput(e.target.value)} maxLength={2000} disabled={state.kind === "loading"}/><button aria-label="Send question" disabled={!input.trim() || state.kind === "loading"}><Send size={19}/></button></form>
+    <p className="chat-disclaimer">Powered by OpenAI. Answers may be imperfect; verify details in the resume.</p>
+  </dialog>;
+}
+export default function Home() {
+  const [chatOpen, setChatOpen] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [menuOpen, setMenuOpen] = useState(false);
+  return <>
+    <a className="skip" href="#main">Skip to content</a>
+    <header className="site-header"><a href="#" className="brand" aria-label="Vishalli Maini home"><span className="brand-symbol">v<span>m</span><i/></span><span>Vishalli Maini<span className="brand-role">Software engineer</span></span></a><nav className={menuOpen ? "open" : ""} aria-label="Main navigation"><a href="#work" onClick={() => setMenuOpen(false)}>Selected work</a><a href="#about" onClick={() => setMenuOpen(false)}>About</a><a href="#experience" onClick={() => setMenuOpen(false)}>Experience</a><a href={links.resume} target="_blank" rel="noreferrer">Resume<ArrowUpRight size={14}/></a></nav><a className="header-contact" href="#contact">Let&apos;s talk <ArrowUpRight size={16}/></a><button className="mobile-menu icon-button" aria-label="Toggle navigation" aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X/> : <Menu/>}</button></header>
+    <main id="main">
+      <section className="hero" aria-labelledby="hero-title">
+        <div className="hero-copy"><div className="intro-label"><span/>Based in Himachal Pradesh, India</div><h1 id="hero-title">Engineering<br/>ideas into<br/><span>real experiences.</span></h1><p className="hero-description">I&apos;m Vishalli. I build full stack products, real-time voice systems, and AI agents that do useful work.</p><div className="hero-actions"><a className="button primary" href="#work">Explore my work <ArrowDown size={17}/></a><button className="button secondary" onClick={() => setChatOpen(true)}><MessageCircle size={17}/>Ask my AI recruiter</button></div><div className="hero-credit"><span className="credit-line"/>Team Lead at <strong>Inspra AI</strong><span className="credit-separator"/>Previously <strong>Morgan Stanley</strong></div></div>
+        <div className="hero-scene"><div className="scene-orbit orbit-one"/><div className="scene-orbit orbit-two"/><div className="scene-dot"/><div className="portrait-frame"><img src="/assets/vishalli-avatar.png" alt="Illustrated portrait of Vishalli Maini" className="portrait" fetchPriority="high"/><span className="portrait-caption">The human behind the code.</span></div><div className="scene-label">Thoughtfully built.<br/>Ready for the real world.</div><button className="mascot-trigger" onClick={() => setChatOpen(true)} aria-label="Open Vishalli's AI recruiter"><span className="mascot-bubble">Curious about my work?<br/><strong>Ask my AI recruiter <ArrowUpRight size={14}/></strong></span><img src="/assets/recruiter-mascot.png" alt="Pink and white 3D AI recruiter mascot"/><span className="mascot-caption"><MessageCircle size={13}/>Let&apos;s chat</span></button></div>
+        <div className="hero-bottom"><span>Code with purpose. Build with curiosity.</span><a href="#work">Scroll to discover <ArrowDown size={14}/></a></div>
+      </section>
+      <div className="expertise-strip" aria-label="Areas of expertise"><span>Full stack engineering</span><i/><span>Conversational AI</span><i/><span>Real-time systems</span><i/><span>Platform architecture</span></div>
+      <section id="work" className="section work-section"><div className="section-heading"><div><p className="section-kicker">Selected work</p><h2>Built for the<br/>world beyond the demo.</h2></div><p>A closer look at the systems I&apos;ve built,<br className="desktop-break"/> the problems they solve, and the decisions behind them.</p></div>
+        <article className="project"><div className="project-art voice-art"><div className="art-heading"><span>Inspra AI</span><span className="live-dot">Voice infrastructure</span></div><div className="wave" aria-hidden="true">{Array.from({length: 49}, (_,i) => <i key={i} style={{height: `${14 + Math.abs(Math.sin(i*.49))*80 + Math.sin(i*.17)**2*75}px`}}/>)}</div><div className="latency"><span><small>Before</small>1.05s</span><ArrowUpRight size={30}/><strong><small>After</small>0.3s</strong></div><p>Approximate speech-processing delay</p></div><div className="project-copy"><p className="project-category">Real-time voice & AI</p><h3>Less waiting.<br/>More conversation.</h3><p>I moved connection setup and audio upload off the critical path, opening recognition sockets as speech begins. The result is a voice pipeline with less delay between listening and responding.</p><div className="tags"><span>Python</span><span>LiveKit</span><span>AsyncIO</span><span>Streaming speech</span></div><details><summary>Inside the engineering <span>+</span></summary><p>Modular speech and LLM integrations include fallback adapters, per-agent model selection, and latency-sorted routing. These are contributions to Inspra AI; the source is private.</p></details></div></article>
+        <article className="project reverse"><div className="project-art platform-art"><div className="art-heading"><span>Inspra AI</span><span>Platform architecture</span></div><div className="tenants"><span>Business A</span><span>Business B</span><span>Business C</span></div><div className="connector-lines"/><div className="runtime"><span className="runtime-icon">⌘</span><strong>One shared runtime</strong><span>Prompts. Tools. Integrations.</span></div><div className="platform-tools"><span>Redis</span><span>Agent tools</span><span>APIs</span></div></div><div className="project-copy"><p className="project-category">Multi-tenant agent platform</p><h3>One platform.<br/>Different possibilities.</h3><p>Different businesses need different conversations. I architected a Python backend that resolves prompts, greetings, and tools from Redis for each call, so new tenants onboard through configuration.</p><div className="tags"><span>Python 3.13</span><span>Redis</span><span>REST APIs</span><span>Agent tools</span></div><details><summary>Inside the engineering <span>+</span></summary><p>Reusable tools handle appointment booking, call transfers, and integrations with configurable authentication, OpenAPI schemas, and templated webhook requests. My ownership spans architecture, implementation, reviews, and provider cost strategy.</p></details></div></article>
+        <article className="project"><div className="project-art mapping-art"><div className="art-heading"><span>Morgan Stanley</span><span>Product engineering</span></div><div className="mapping-title">From spreadsheet<br/>to something useful.</div><div className="mapping-grid">{[['Client name','Customer name'],['Account no.','Account number'],['Txn date','Transaction date']].map(([a,b]) => <div key={a}><span>{a}</span><ArrowUpRight size={18}/><span>{b}</span></div>)}</div><p>Illustrative field-mapping workflow</p></div><div className="project-copy"><p className="project-category">Fintech interfaces</p><h3>Making complex<br/>imports feel simple.</h3><p>At Morgan Stanley, I developed Angular components for an Excel import workflow and fuzzy-matching logic to align spreadsheet headers with interface fields automatically.</p><div className="tags"><span>Angular</span><span>TypeScript</span><span>Fuzzy matching</span></div><details><summary>Inside the engineering <span>+</span></summary><p>Application Development Internship, July 2024 to January 2025 in Bangalore. I received recognition for innovation and problem-solving. The visual explains the mapping concept, rather than reproducing an internal product.</p></details></div></article>
+      </section>
+      <section className="about-section section" id="about"><div className="about-intro"><p className="section-kicker">A little about me</p><h2>Curiosity starts it.<br/>Engineering makes it real.</h2><p className="about-lead">I work where interfaces, backend services, and AI meet.</p><p>I&apos;m a software engineer from Himachal Pradesh, India. At Inspra AI, I lead a production platform from architecture and implementation to code reviews and sprint planning.</p><p>My work includes real-time speech pipelines, configurable agent tools, and self-hosted inference. I enjoy understanding the whole system, then making each piece work better.</p><a className="text-link" href={links.resume} download>Download my resume <Download size={17}/></a></div><div className="toolkit"><h3>The tools I work with</h3><div><span>Interfaces</span><p>React · Angular · TypeScript<br/>JavaScript · HTML · CSS</p></div><div><span>Systems</span><p>Python · FastAPI · Flask · Node.js<br/>PostgreSQL · Redis · Docker</p></div><div><span>Intelligence</span><p>LLM orchestration · RAG · LiveKit<br/>Agent tools · Streaming speech</p></div></div></section>
+      <section className="experience-section section" id="experience"><div className="section-heading"><div><p className="section-kicker">The journey so far</p><h2>Learning by building.</h2></div><button className="text-link" onClick={() => setChatOpen(true)}>Ask about my experience <MessageCircle size={18}/></button></div><div className="timeline"><article><span className="timeline-date">Feb 2025 – present</span><div><h3>Inspra AI</h3><p>Team Lead</p></div><span>Remote</span></article><article><span className="timeline-date">Jul 2024 – Jan 2025</span><div><h3>Morgan Stanley</h3><p>Application Development Intern</p></div><span>Bangalore, India</span></article><article><span className="timeline-date">2021 – 2025</span><div><h3>Chitkara University</h3><p>B.E. Computer Science</p></div><span>CGPA 9.6 / 10</span></article></div><div className="recognition"><a href="https://ieeexplore.ieee.org/document/10270195" target="_blank" rel="noreferrer"><span>Published research · IEEE</span><h3>Dissecting Parsley Leaf Disease Severity</h3><p>Federated Learning and CNN Perspective <ArrowUpRight size={16}/></p></a><div><span>Recognition · 2022</span><h3>Techstars Startup Weekend Women</h3><p>Winner, Chandigarh</p></div></div></section>
+      <section className="contact-section section" id="contact"><p className="section-kicker">Let&apos;s build something useful</p><h2>The next good idea<br/>starts with a hello.</h2><a className="contact-email" href={links.email}>vishallimaini2003@gmail.com <ArrowUpRight/></a><div className="contact-links"><a href={links.github} target="_blank" rel="noreferrer">GitHub<ArrowUpRight size={14}/></a><a href={links.linkedin} target="_blank" rel="noreferrer">LinkedIn<ArrowUpRight size={14}/></a><a href={links.resume} download><Download size={18}/>Resume</a></div><footer><span>© {new Date().getFullYear()} Vishalli Maini</span><span>Made with intention.</span><a href="#">Back to top <ArrowUp size={14}/></a></footer></section>
+    </main>
+    <button className="floating-chat" onClick={() => setChatOpen(true)} aria-label="Open AI recruiter"><MessageCircle size={20}/><span>Ask my AI recruiter</span></button>
+    {chatOpen && <Recruiter close={() => setChatOpen(false)} messages={messages} setMessages={setMessages}/>}
+  </>;
+}
